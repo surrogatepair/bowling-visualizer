@@ -77,11 +77,10 @@ tests/                  unit tests (Vitest)
 ### Continuous integration and deployment
 
 `.github/workflows/ci.yml` type-checks, tests and builds every push and pull request,
-and keeps the built page as the `site` artifact of the run.
+and keeps the built page as the `github-pages` artifact of the run.
 
-Pushes to `main` are deployed as well: the workflow commits the built page to the
-`gh-pages` branch, which GitHub Pages serves (Settings > Pages > Source: *Deploy from a
-branch*, `gh-pages`).
+Pushes to `main` are deployed as well: the workflow publishes that artifact to GitHub
+Pages (Settings > Pages > Source: *GitHub Actions*).
 
 ## About this source
 
