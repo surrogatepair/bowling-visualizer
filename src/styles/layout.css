@@ -4,7 +4,6 @@
   --app-width: calc(var(--app-width-units) * 1px);
   --views-gap: calc(var(--views-gap-units) * 1px);
   --app-font-family: "Google Sans Flex", sans-serif;
-  --shadow-tooltip: 0 1px 4px var(--ink);
   --tooltip-hit-radius: 18;
   --tooltip-margin: 12;
   --body-padding: 16px;

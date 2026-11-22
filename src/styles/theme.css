@@ -1,4 +1,10 @@
-:root {
+/*
+ * The palette. The state graph and the frame panels are drawn for a white ground, so
+ * their container always gets the light values; the dark theme below changes the page
+ * around them and the score sheet.
+ */
+:root,
+.responsive-svg-wrap {
   --ink: oklch(0 0 0);
   --tooltip-bg: oklch(0.2 0 0);
   --ink-subtle: oklch(0.5 0 0);
@@ -38,4 +44,27 @@
   --score-sheet-empty-opacity: 0.5;
   --chart-highlight-halo-stroke-opacity: 0.7;
   --chart-comparison-series-opacity: 0.5;
+
+  --shadow-tooltip: 0 1px 4px var(--ink);
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+.responsive-svg-wrap {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: oklch(0.96 0 0);
+    --ink-subtle: oklch(0.7 0 0);
+    --border: oklch(0.42 0 0);
+    --border-subtle: oklch(0.3 0 0);
+    --bg: oklch(0.17 0 0);
+    --surface: oklch(0.23 0 0);
+
+    --danger: oklch(0.68 0.19 25);
+  }
 }
