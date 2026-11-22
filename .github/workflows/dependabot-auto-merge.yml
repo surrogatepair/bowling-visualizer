@@ -1,6 +1,6 @@
 name: Dependabot auto-merge
 
-# Squash-merges a Dependabot pull request once CI has passed on it.
+# Merges a Dependabot pull request by rebasing once CI has passed on it.
 on:
   workflow_run:
     workflows: [CI]
@@ -21,7 +21,7 @@ jobs:
       github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Squash-merge the pull request
+      - name: Rebase and merge the pull request
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -34,7 +34,7 @@ jobs:
             echo "No open Dependabot pull request at $SHA."
             exit 0
           fi
-          gh pr merge "$number" --repo "$REPO" --squash --match-head-commit "$SHA"
+          gh pr merge "$number" --repo "$REPO" --rebase --match-head-commit "$SHA"
 
           # A merge made with the workflow token does not start workflows, so run CI
           # on main explicitly; that also deploys the result.
