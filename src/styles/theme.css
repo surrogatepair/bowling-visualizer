@@ -1,0 +1,41 @@
+:root {
+  --ink: oklch(0 0 0);
+  --tooltip-bg: oklch(0.2 0 0);
+  --ink-subtle: oklch(0.5 0 0);
+  --border: oklch(0.8 0 0);
+  --chart-edge: oklch(0.9 0 0);
+  --border-subtle: oklch(0.95 0 0);
+  --bg: oklch(0.98 0 0);
+  --surface: oklch(1 0 0);
+
+  --danger: oklch(0.5 0.2 25);
+
+  --chart-highlight: #dc2626;
+  --preset-spare-start: #e5179a;
+  --preset-strike-start: #11a8d4;
+  --preset-perfect: #f59e0b;
+  --preset-all-spare: #16a34a;
+  --preset-all-open: #7c3aed;
+  --preset-tap-band: #7dd3fc;
+  --preset-tap-first: #15803d;
+  --preset-tap-tenth: #ea580c;
+  --preset-tap-299: #dc2626;
+
+  --cat-no-pending: #0072b2;
+  --cat-spare-pending: #e69f00;
+  --cat-strike-pending: #cc79a7;
+  --cat-double-strike-pending: #009e73;
+  --cat-mid-no-carry: oklch(0.7 0.02 45);
+  --cat-mid-carry: oklch(0.55 0.04 270);
+  --chart-edge-no-pending: oklch(from var(--cat-no-pending) 0.9 min(c, 0.02) h);
+  --chart-edge-spare-pending: oklch(from var(--cat-spare-pending) 0.9 min(c, 0.05) h);
+  --chart-edge-strike-pending: oklch(from var(--cat-strike-pending) 0.9 min(c, 0.05) h);
+  --chart-edge-double-strike-pending: oklch(from var(--cat-double-strike-pending) 0.9 min(c, 0.05) h);
+  --chart-edge-mid-no-carry: oklch(from var(--cat-mid-no-carry) 0.9 min(c, 0.05) h);
+  --chart-edge-mid-carry: oklch(from var(--cat-mid-carry) 0.9 min(c, 0.05) h);
+
+  --graph-tooltip-label-opacity: 0.75;
+  --score-sheet-empty-opacity: 0.5;
+  --chart-highlight-halo-stroke-opacity: 0.7;
+  --chart-comparison-series-opacity: 0.5;
+}

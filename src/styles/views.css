@@ -1,0 +1,400 @@
+.score-sheet {
+  display: block;
+  width: 100%;
+  max-width: var(--score-sheet-max-width);
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+  transition: opacity 0.15s ease;
+}
+
+.views {
+  display: flex;
+  flex-direction: column;
+}
+
+.views.is-horizontal {
+  flex-direction: row;
+  align-items: flex-start;
+  column-gap: calc(100% * var(--views-gap-units) / (var(--app-width-units) * 2 + var(--views-gap-units)));
+}
+
+.views.is-horizontal > #graph, .views.is-horizontal > #frames {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.views.is-horizontal > #frames {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+#frames {
+  margin-top: calc(100% * var(--views-gap-units) / var(--app-width-units));
+  padding-top: 0;
+}
+
+.axis text {
+  fill: var(--ink);
+}
+
+.axis path {
+  stroke: var(--ink);
+}
+
+.graph-tooltip {
+  position: absolute;
+  left: calc(var(--tooltip-left, 0) * 1px);
+  top: calc(var(--tooltip-top, 0) * 1px);
+  pointer-events: none;
+  visibility: hidden;
+  z-index: 10;
+  max-width: var(--graph-tooltip-max-width);
+  padding: var(--graph-tooltip-padding);
+  border-radius: var(--graph-tooltip-border-radius);
+  background: var(--tooltip-bg);
+  box-shadow: var(--shadow-tooltip);
+  color: var(--surface);
+  font-family: var(--app-font-family);
+  font-size: var(--graph-tooltip-font-size);
+  line-height: var(--graph-tooltip-line-height);
+  font-variant-numeric: initial;
+}
+
+.has-tooltip-target {
+  cursor: pointer;
+}
+
+.graph-tooltip.is-visible {
+  visibility: visible;
+}
+
+.clipboard-buffer {
+  position: fixed;
+  opacity: 0;
+}
+
+.graph-tooltip-title {
+  margin-bottom: var(--graph-tooltip-title-margin-bottom);
+  font-weight: var(--graph-tooltip-title-font-weight);
+}
+
+.graph-tooltip-label {
+  opacity: var(--graph-tooltip-label-opacity);
+}
+
+.responsive-svg-wrap {
+  position: relative;
+  container-type: inline-size;
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  aspect-ratio: var(--svg-width) / var(--svg-height);
+}
+
+.responsive-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.responsive-svg-absolute {
+  position: absolute;
+  inset: 0;
+}
+
+.responsive-svg-block {
+  display: block;
+}
+
+.responsive-svg-surface {
+  background: var(--surface);
+}
+
+.score-sheet-empty {
+  opacity: var(--score-sheet-empty-opacity);
+}
+
+.score-scene-root .content-layer {
+  font-family: inherit;
+  text-anchor: middle;
+}
+
+.score-scene-root .roll-values,
+.score-text {
+  fill: var(--ink);
+}
+
+.score-text {
+  font-size: var(--score-text-font-size);
+  font-weight: var(--score-text-font-weight);
+  dominant-baseline: central;
+}
+
+.score-text--frame-label {
+  fill: var(--ink-subtle);
+}
+
+.score-text--roll {
+  font-size: var(--score-text-roll-font-size);
+  font-weight: var(--score-text-roll-font-weight);
+}
+
+.score-text--total-provisional,
+.score-text--total-final {
+  font-size: var(--score-total-font-size);
+  font-weight: var(--score-total-font-weight);
+}
+
+.score-text--total-provisional {
+  fill: var(--border);
+}
+
+.score-text--error {
+  fill: var(--surface);
+  font-size: var(--score-text-error-font-size);
+  font-weight: var(--score-text-error-font-weight);
+}
+
+.score-text-obscured {
+  fill: transparent;
+}
+
+.score-background--surface {
+  fill: var(--surface);
+}
+
+.score-background--label {
+  fill: var(--bg);
+}
+
+.score-background--invalid {
+  fill: var(--danger);
+}
+
+.score-error-panel {
+  fill: var(--danger);
+  stroke: none;
+}
+
+.score-error-frame,
+.score-grid-lines {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: var(--score-grid-lines-stroke-width);
+}
+
+.score-error-highlight,
+.score-highlight-bottom {
+  fill: none;
+  stroke: var(--series-color, var(--border));
+  stroke-width: var(--score-highlight-bottom-stroke-width);
+}
+
+.score-grid-lines,
+.score-highlight-bottom {
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  pointer-events: none;
+}
+
+.category-no_pending {
+  --category-color: var(--cat-no-pending);
+  --category-edge: var(--chart-edge-no-pending);
+}
+
+.category-spare_pending {
+  --category-color: var(--cat-spare-pending);
+  --category-edge: var(--chart-edge-spare-pending);
+}
+
+.category-strike_pending {
+  --category-color: var(--cat-strike-pending);
+  --category-edge: var(--chart-edge-strike-pending);
+}
+
+.category-double_strike_pending {
+  --category-color: var(--cat-double-strike-pending);
+  --category-edge: var(--chart-edge-double-strike-pending);
+}
+
+.category-mid_no_carry {
+  --category-color: var(--cat-mid-no-carry);
+  --category-edge: var(--chart-edge-mid-no-carry);
+}
+
+.category-mid_carry {
+  --category-color: var(--cat-mid-carry);
+  --category-edge: var(--chart-edge-mid-carry);
+}
+
+.major-y-grid {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: var(--major-y-grid-stroke-width);
+}
+
+.plot-frame, .plot-frame-ticks {
+  fill: none;
+  stroke: var(--ink-subtle);
+  stroke-width: var(--plot-frame-stroke-width);
+}
+
+.panel-axis {
+  stroke: var(--category-color);
+}
+
+.panel-axis.plot-frame {
+  stroke-width: var(--panel-axis-plot-frame-stroke-width);
+}
+
+.frame-brackets, .frame-bracket {
+  fill: none;
+  stroke: var(--ink-subtle);
+}
+
+.chart-title {
+  text-anchor: middle;
+  fill: var(--ink);
+  font-size: var(--chart-title-font-size);
+  font-weight: var(--chart-title-font-weight);
+}
+
+.chart-title-count {
+  font-weight: var(--chart-title-count-font-weight);
+}
+
+.x-axis-labels text, .frame-bracket-label {
+  text-anchor: middle;
+  fill: var(--ink);
+  font-size: var(--x-axis-labels-text-font-size);
+}
+
+.y-axis-labels text, .left-y-labels text, .right-y-labels text {
+  text-anchor: end;
+  fill: var(--ink);
+  font-size: var(--y-axis-labels-text-font-size);
+}
+
+.right-y-labels text {
+  text-anchor: start;
+}
+
+.chart-legend-marker, .panel-entry-marker {
+  fill: var(--category-color);
+}
+
+.chart-legend-marker.chart-node-end {
+  r: var(--legend-end-radius);
+}
+
+.chart-legend-marker.chart-node-mid {
+  r: var(--legend-mid-radius);
+}
+
+.chart-legend-label {
+  fill: var(--ink);
+  font-size: var(--chart-legend-label-font-size);
+}
+
+.chart-round-stroke {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.chart-node, .chart-ghost, .panel-source-node {
+  stroke: var(--category-color);
+}
+
+.chart-ghost-inner {
+  stroke: var(--surface);
+}
+
+.graph-marker.chart-node-end {
+  stroke-width: var(--graph-end-marker-stroke-width);
+}
+
+.graph-marker.chart-node-mid {
+  stroke-width: var(--graph-mid-marker-stroke-width);
+}
+
+.graph-marker.chart-ghost {
+  stroke-width: var(--graph-ghost-stroke-width);
+}
+
+.graph-marker.chart-ghost-inner {
+  stroke-width: var(--graph-ghost-inner-stroke-width);
+}
+
+.panel-marker.chart-node-end {
+  stroke-width: var(--panel-end-marker-stroke-width);
+}
+
+.panel-marker.chart-node-mid, .panel-source-node.chart-node-mid {
+  stroke-width: var(--panel-mid-marker-stroke-width);
+}
+
+.panel-source-node.chart-node-end, .panel-marker.chart-ghost {
+  stroke-width: var(--panel-source-end-marker-stroke-width);
+}
+
+.panel-marker.chart-ghost-inner {
+  stroke-width: var(--panel-ghost-inner-stroke-width);
+}
+
+.graph-edges {
+  fill: none;
+  stroke: var(--chart-edge);
+  stroke-width: var(--graph-edges-stroke-width);
+  stroke-linecap: butt;
+}
+
+.panel-edges {
+  fill: var(--category-edge);
+  fill-rule: nonzero;
+  stroke: none;
+}
+
+.panel-background {
+  fill: var(--surface);
+  stroke: none;
+}
+
+.chart-highlight-line, .chart-highlight-dot {
+  stroke: var(--series-color, var(--chart-highlight));
+}
+
+.chart-highlight-line {
+  stroke-width: var(--chart-highlight-line-stroke-width);
+  stroke-linejoin: round;
+}
+
+.chart-highlight-dot {
+  stroke-width: var(--chart-highlight-dot-stroke-width);
+}
+
+.chart-highlight-halo {
+  stroke: var(--surface);
+  stroke-opacity: var(--chart-highlight-halo-stroke-opacity);
+}
+
+.chart-highlight-line.chart-highlight-halo {
+  stroke-width: var(--highlight-line-halo-stroke-width);
+}
+
+.chart-highlight-dot.chart-highlight-halo {
+  stroke-width: var(--highlight-dot-halo-stroke-width);
+}
+
+.chart-comparison-root {
+  isolation: isolate;
+}
+
+.chart-comparison-colors {
+  isolation: isolate;
+  mix-blend-mode: multiply;
+}
+
+.chart-comparison-series {
+  opacity: var(--chart-comparison-series-opacity);
+}

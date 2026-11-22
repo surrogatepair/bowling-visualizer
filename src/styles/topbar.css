@@ -1,0 +1,119 @@
+.topbar {
+  margin-bottom: var(--topbar-margin-bottom);
+}
+
+.tab-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--tab-row-gap);
+  margin-bottom: var(--tab-row-margin-bottom);
+  border-bottom: var(--tab-row-border-bottom);
+  reading-flow: flex-visual;
+}
+
+.tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--tabs-gap);
+}
+
+.tab {
+  background: transparent;
+  border: 0;
+  padding: var(--tab-padding);
+  font: inherit;
+  font-size: var(--tab-font-size);
+  color: var(--ink-subtle);
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: var(--border-subtle);
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--tab-selected-border);
+  border-bottom-color: var(--surface);
+  margin-bottom: var(--tab-selected-margin-bottom);
+  font-weight: var(--tab-selected-font-weight);
+}
+
+.topbar-toggles {
+  display: flex;
+  align-items: center;
+  gap: var(--topbar-toggles-gap);
+  margin-left: auto;
+  align-self: center;
+  padding-bottom: var(--topbar-toggles-padding-bottom);
+}
+
+.toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--toggle-group-gap);
+}
+
+.toggle-label {
+  font-size: var(--toggle-label-font-size);
+  font-weight: var(--toggle-label-font-weight);
+  color: var(--ink-subtle);
+  white-space: nowrap;
+}
+
+.seg-toggle {
+  display: inline-flex;
+  border: var(--seg-toggle-border);
+}
+
+.seg-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--seg-button-size);
+  height: var(--seg-button-size);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  line-height: var(--seg-button-line-height);
+  color: var(--ink-subtle);
+  cursor: pointer;
+}
+
+.seg-button--icon {
+  width: var(--seg-button-size);
+  font-size: var(--seg-button-icon-font-size);
+}
+
+.seg-button--text {
+  padding: var(--seg-button-text-padding);
+  font-size: var(--seg-button-text-font-size);
+}
+
+.seg-button + .seg-button {
+  border-left: var(--seg-button-seg-button-border-left);
+}
+
+.seg-button:not([aria-pressed="true"]):hover {
+  background: var(--border-subtle);
+  color: var(--ink);
+}
+
+.seg-button[aria-pressed="true"] {
+  background: var(--border);
+  color: var(--ink);
+  font-weight: var(--seg-button-aria-pressed-true-font-weight);
+}
+
+.tab:focus-visible, .seg-button:focus-visible, .sample-button:focus-visible, .copy-link:focus-visible, .input-clear:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-outline-offset);
+}
+
+.seg-button:focus-visible {
+  position: relative;
+  z-index: 1;
+}

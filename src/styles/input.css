@@ -1,0 +1,142 @@
+.input-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--input-row-gap);
+}
+
+.input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.input-row textarea {
+  flex: 1;
+  min-width: 0;
+  height: var(--roll-input-height);
+  padding: var(--roll-input-padding);
+  border: var(--roll-input-border);
+  font-size: var(--roll-input-font-size);
+  font-family: inherit;
+  line-height: var(--roll-input-line-height);
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: inherit;
+  resize: none;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.input-row textarea.is-comparing {
+  height: var(--comparison-input-height);
+}
+
+.input-row textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: var(--roll-input-focus-box-shadow);
+}
+
+.input-clear {
+  position: absolute;
+  top: var(--input-clear-top);
+  right: var(--input-clear-right);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--input-clear-size);
+  height: var(--input-clear-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--border-subtle);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--input-clear-font-size);
+  line-height: var(--input-clear-line-height);
+  cursor: pointer;
+}
+
+.input-clear:hover {
+  background: var(--border);
+  color: var(--ink);
+}
+
+.copy-link {
+  flex: 0 0 auto;
+  padding: var(--copy-link-padding);
+  border: var(--copy-link-border);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--copy-link-font-size);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.copy-link:hover {
+  background: var(--border-subtle);
+}
+
+.copy-link:active {
+  background: var(--border);
+}
+
+.copy-link.copied {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.sample-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sample-row-gap);
+  margin-top: var(--sample-row-margin-top);
+}
+
+.sample-row[hidden] {
+  display: none;
+}
+
+.sample-button {
+  padding: var(--sample-button-padding);
+  border: var(--sample-button-border);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--sample-button-font-size);
+  cursor: pointer;
+}
+
+.sample-button:hover {
+  background: var(--border-subtle);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.sample-button:active {
+  background: var(--border-subtle);
+}
+
+.compare-toggle {
+  margin-left: auto;
+}
+
+.preset-chip[aria-pressed="true"] {
+  background: var(--border);
+  border-color: var(--ink);
+  color: var(--ink);
+  font-weight: var(--preset-chip-aria-pressed-true-font-weight);
+}
+
+.status {
+  margin: var(--status-margin);
+  min-height: var(--status-min-height);
+  width: 100%;
+  max-width: var(--score-sheet-max-width);
+  font-size: var(--status-font-size);
+  color: var(--ink);
+  overflow-x: visible;
+}

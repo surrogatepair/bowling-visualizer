@@ -1,0 +1,123 @@
+:root {
+  --app-width-units: 1440;
+  --views-gap-units: 20;
+  --app-width: calc(var(--app-width-units) * 1px);
+  --views-gap: calc(var(--views-gap-units) * 1px);
+  --app-font-family: "Google Sans Flex", sans-serif;
+  --shadow-tooltip: 0 1px 4px var(--ink);
+  --tooltip-hit-radius: 18;
+  --tooltip-margin: 12;
+  --body-padding: 16px;
+  --topbar-margin-bottom: 12px;
+  --tab-row-gap: 2px;
+  --tab-row-margin-bottom: 10px;
+  --tabs-gap: 2px;
+  --tab-padding: 6px 14px;
+  --tab-font-size: 13px;
+  --tab-selected-margin-bottom: -1px;
+  --topbar-toggles-gap: 16px;
+  --topbar-toggles-padding-bottom: 4px;
+  --toggle-group-gap: 6px;
+  --toggle-label-font-size: 11px;
+  --seg-button-size: 28px;
+  --seg-button-icon-font-size: 16px;
+  --seg-button-text-padding: 0 5px;
+  --seg-button-text-font-size: 15px;
+  --control-focus-outline-offset: 1px;
+  --input-row-gap: 10px;
+  --roll-input-height: 1lh;
+  --roll-input-padding: 8px 32px 8px 10px;
+  --roll-input-font-size: 14px;
+  --comparison-input-height: 8lh;
+  --input-clear-top: 8px;
+  --input-clear-right: 6px;
+  --input-clear-size: 20px;
+  --input-clear-font-size: 14px;
+  --copy-link-padding: 9px 12px;
+  --copy-link-font-size: 12px;
+  --sample-row-gap: 6px;
+  --sample-row-margin-top: 8px;
+  --sample-button-padding: 5px 9px;
+  --sample-button-font-size: 12px;
+  --status-margin: 8px auto 0;
+  --status-min-height: 54px;
+  --score-sheet-max-width: 1000px;
+  --status-font-size: 12px;
+  --graph-tooltip-max-width: 48cqw;
+  --graph-tooltip-padding: 0.5cqw 1cqw;
+  --graph-tooltip-border-radius: 0.5cqw;
+  --graph-tooltip-font-size: 1cqw;
+  --graph-tooltip-title-margin-bottom: 0.5cqw;
+  --score-text-font-size: 16px;
+  --score-text-roll-font-size: 28px;
+  --score-total-font-size: 32px;
+  --score-text-error-font-size: 14px;
+  --score-grid-lines-stroke-width: 1;
+  --score-highlight-bottom-stroke-width: 2;
+  --major-y-grid-stroke-width: 1;
+  --plot-frame-stroke-width: 1;
+  --panel-axis-plot-frame-stroke-width: 2;
+  --chart-title-font-size: 20px;
+  --x-axis-labels-text-font-size: 14px;
+  --y-axis-labels-text-font-size: 16px;
+  --legend-end-radius: 7px;
+  --legend-mid-radius: 5px;
+  --chart-legend-label-font-size: 14px;
+  --graph-end-marker-stroke-width: 4;
+  --graph-mid-marker-stroke-width: 2;
+  --graph-ghost-stroke-width: 3;
+  --graph-ghost-inner-stroke-width: 1;
+  --panel-end-marker-stroke-width: 8;
+  --panel-mid-marker-stroke-width: 4;
+  --panel-source-end-marker-stroke-width: 6;
+  --panel-ghost-inner-stroke-width: 2;
+  --chart-highlight-line-stroke-width: 4;
+  --chart-highlight-dot-stroke-width: 10;
+  --highlight-line-halo-stroke-width: 7;
+  --highlight-dot-halo-stroke-width: 14;
+  --tab-row-border-bottom: 1px solid var(--border);
+  --tab-selected-border: 1px solid var(--border);
+  --tab-selected-font-weight: 600;
+  --toggle-label-font-weight: 600;
+  --seg-toggle-border: 1px solid var(--border);
+  --seg-button-line-height: 1;
+  --seg-button-seg-button-border-left: 1px solid var(--border);
+  --seg-button-aria-pressed-true-font-weight: 600;
+  --control-focus-outline: 2px solid var(--ink);
+  --roll-input-border: 1px solid var(--border);
+  --roll-input-line-height: 1.4;
+  --roll-input-focus-box-shadow: 0 0 0 3px var(--border);
+  --input-clear-line-height: 1;
+  --copy-link-border: 1px solid var(--border);
+  --sample-button-border: 1px solid var(--border);
+  --preset-chip-aria-pressed-true-font-weight: 600;
+  --graph-tooltip-line-height: 1.4;
+  --graph-tooltip-title-font-weight: 600;
+  --score-text-font-weight: 400;
+  --score-text-roll-font-weight: 700;
+  --score-total-font-weight: 700;
+  --score-text-error-font-weight: 600;
+  --chart-title-font-weight: bold;
+  --chart-title-count-font-weight: normal;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .tab-row {
+    flex-wrap: wrap;
+  }
+
+  .topbar-toggles {
+    order: -1;
+    width: 100%;
+    margin-left: 0;
+    margin-bottom: 8px;
+    padding-bottom: 0;
+    justify-content: flex-end;
+  }
+}
