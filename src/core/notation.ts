@@ -85,25 +85,22 @@ function isSeparator(code: number): boolean {
   return code === 9 || code === 10 || code === 13 || code === 32 || code === 124;
 }
 
-/** Em dash. Phones turn two hyphens typed in a row into one, so it stands for two misses. */
-const EM_DASH = 0x2014;
-
 /**
- * Hyphen look-alikes read as `-`: hyphen, non-breaking hyphen, figure dash, en dash,
- * horizontal bar, minus sign, and the long vowel marks a Japanese keyboard types for
- * the minus key.
+ * Characters read as `-`: hyphen, non-breaking hyphen, minus sign, and the long vowel
+ * marks a Japanese keyboard types for the minus key. Dashes (`–`, `—`) are left out on
+ * purpose: software produces them from two hyphens, so what they stand for is unclear.
  */
-const DASHES = new Set([0x2010, 0x2011, 0x2012, 0x2013, 0x2015, 0x2212, 0x30fc, 0xff70]);
+const HYPHENS = new Set([0x2010, 0x2011, 0x2212, 0x30fc, 0xff70]);
 
 /**
  * Maps a character to the ASCII character the notation knows it as: full-width forms
  * (`Ｘ`, `／`, `９`, ...) to their plain counterparts, the ideographic space to a space
- * and dash look-alikes to `-`. Other characters are returned unchanged.
+ * and hyphen look-alikes to `-`. Other characters are returned unchanged.
  */
 export function foldChar(code: number): number {
   if (code >= 0xff01 && code <= 0xff5e) return code - 0xfee0;
   if (code === 0x3000) return 32;
-  if (DASHES.has(code)) return 45;
+  if (HYPHENS.has(code)) return 45;
   return code;
 }
 
@@ -130,35 +127,31 @@ export function parseRolls(text: string, options: NotationOptions = {}): Notatio
     let code = foldChar(char.codePointAt(0)!);
     if (isSeparator(code)) continue;
     if (code >= 97 && code <= 122) code -= 32;
-    // An em dash is two misses; everything else is one roll.
-    const count = code === EM_DASH ? 2 : 1;
-    const symbol = code === EM_DASH ? "-" : String.fromCodePoint(code);
+    const symbol = String.fromCodePoint(code);
 
-    for (let n = 0; n < count; n++) {
-      if (state.complete) return fail(GAME_COMPLETE, at);
+    if (state.complete) return fail(GAME_COMPLETE, at);
 
-      let pins: number;
-      if (symbol === "-" || symbol === "F" || symbol === "G") {
-        pins = 0;
-      } else if (symbol === "X") {
-        if (!options.literalStrike && state.midRack) return fail(STRIKE_MID_RACK, at);
-        pins = 10;
-      } else if (symbol === "/") {
-        if (!state.midRack) {
-          return fail(state.rollsInFrame === 0 ? SPARE_FIRST_ROLL : SPARE_FRESH_RACK, at);
-        }
-        pins = state.standing;
-      } else if (code >= 48 && code <= 57) {
-        pins = code - 48;
-      } else {
-        return fail(`unexpected character "${symbol}"`, at);
+    let pins: number;
+    if (symbol === "-" || symbol === "F" || symbol === "G") {
+      pins = 0;
+    } else if (symbol === "X") {
+      if (!options.literalStrike && state.midRack) return fail(STRIKE_MID_RACK, at);
+      pins = 10;
+    } else if (symbol === "/") {
+      if (!state.midRack) {
+        return fail(state.rollsInFrame === 0 ? SPARE_FIRST_ROLL : SPARE_FRESH_RACK, at);
       }
-
-      const problem = state.check(pins);
-      if (problem !== null) return fail(problem, at);
-      state.advance(pins);
-      rolls.push(pins);
+      pins = state.standing;
+    } else if (code >= 48 && code <= 57) {
+      pins = code - 48;
+    } else {
+      return fail(`unexpected character "${symbol}"`, at);
     }
+
+    const problem = state.check(pins);
+    if (problem !== null) return fail(problem, at);
+    state.advance(pins);
+    rolls.push(pins);
   }
   return { ok: true, rolls };
 }

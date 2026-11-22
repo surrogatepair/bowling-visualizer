@@ -17,8 +17,8 @@ https://surrogatepair.github.io/bowling-visualizer/
 
 Case does not matter. Example: `X 9/ 81 -5 X X 72 9/ X XX9`
 
-Full-width characters (`Ｘ`, `／`, `９`) and dash look-alikes (`ー`, `–`) are read as their
-plain counterparts. An em dash (`—`) counts as `--`.
+Full-width characters (`Ｘ`, `／`, `９`, `－`, `ー`) are read as their plain counterparts.
+Dashes (`–`, `—`) are not accepted.
 
 In comparison mode each line is one game. End a line with `#rrggbb` to set its color.
 

@@ -44,8 +44,8 @@ describe("scoreGame", () => {
  * total, the total and the error message.
  */
 describe("score sheets recorded from the original build", () => {
-  // Full-width and dash look-alikes were errors in the original; this build reads them.
-  const comparable = (recorded as RecordedGame[]).filter((game) => foldText(game.input) === game.input && !game.input.includes("\u2014"));
+  // Full-width and hyphen look-alikes were errors in the original; this build reads them.
+  const comparable = (recorded as RecordedGame[]).filter((game) => foldText(game.input) === game.input);
 
   it.each(comparable)("$rule: $input", (game) => {
     const entry = parseGameLine(game.input);
