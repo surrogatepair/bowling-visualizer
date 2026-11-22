@@ -7,7 +7,8 @@ import { COMPARISON_PRESETS } from "../../presentation/app/comparison";
 import { SAMPLES } from "../../presentation/app/samples";
 import { RULE_TITLE } from "../../presentation/presentation/labels";
 import { NOTATIONS, type Notation } from "../../presentation/presentation/score_sheet";
-import { createElement, el, type ElementSpec } from "../../presentation/render/chart";
+import { el, type ElementSpec } from "../../presentation/render/chart";
+import { createElement } from "./dom";
 
 export type ViewLayout = "vertical" | "horizontal";
 

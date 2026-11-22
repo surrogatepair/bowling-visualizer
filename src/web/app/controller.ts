@@ -29,8 +29,9 @@ import { buildGraphScene, computeGraphGeometry, type GraphGeometry } from "../..
 import { buildGraphHighlights, rootClass, type HighlightMode, type HighlightSeries } from "../../presentation/presentation/highlight";
 import { NOTATIONS, buildComparisonSheet, buildScoreSheet, type Notation, type SheetGame } from "../../presentation/presentation/score_sheet";
 import { graphTooltipTargets } from "../../presentation/presentation/tooltip";
-import { createElement, replaceChildren, updateElement, type ElementSpec } from "../../presentation/render/chart";
+import type { ElementSpec } from "../../presentation/render/chart";
 import { stylesheet } from "../../styles";
+import { createElement, replaceChildren, updateElement } from "../view/dom";
 import { VIEW_LAYOUTS, mountShell, type Shell, type ViewLayout } from "../view/shell";
 import { TooltipLayer } from "../view/tooltip";
 import {

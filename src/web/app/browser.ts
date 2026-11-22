@@ -2,8 +2,8 @@
  * Thin wrappers around browser facilities, so the controller does not have to deal
  * with missing APIs or storage that throws.
  */
-import type { ElementSpec } from "../../presentation/render/chart";
-import { createElement, el } from "../../presentation/render/chart";
+import { el, type ElementSpec } from "../../presentation/render/chart";
+import { createElement } from "../view/dom";
 
 export const APP_TITLE = "Bowling Score State Visualizer";
 
