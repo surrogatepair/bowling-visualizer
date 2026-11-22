@@ -26,8 +26,9 @@ export function writeStored(key: string, value: string): void {
 
 /** The user's preferred languages, most preferred first. */
 export function preferredLanguages(): string[] {
-  const languages = Array.from(navigator.languages ?? []);
-  if (languages.length === 0 && navigator.language) languages.push(navigator.language);
+  const listed: readonly unknown[] = Array.isArray(navigator.languages) ? navigator.languages : [];
+  const languages = listed.filter((language): language is string => typeof language === "string");
+  if (languages.length === 0 && typeof navigator.language === "string") languages.push(navigator.language);
   return languages;
 }
 
@@ -82,11 +83,16 @@ export function prepareDocument(css: string): HTMLElement {
   return main;
 }
 
-/** Replaces the query string of the current URL without adding a history entry. */
-export function replaceQuery(query: string): void {
+/** The current URL with its query string replaced; path and fragment are kept. */
+export function urlWithQuery(query: string): string {
   const url = new URL(window.location.href);
   url.search = query;
-  window.history.replaceState(null, "", url.href);
+  return url.href;
+}
+
+/** Puts `url` in the address bar without adding a history entry. Throws where the browser refuses. */
+export function replaceUrl(url: string): void {
+  window.history.replaceState(null, "", url);
 }
 
 /** Legacy copy path for browsers without (or refusing) the asynchronous clipboard API. */
@@ -109,14 +115,26 @@ function copyWithSelection(text: string): boolean {
   return copied;
 }
 
-/** Copies text to the clipboard; resolves to whether it worked. */
-export async function copyText(text: string): Promise<boolean> {
-  const clipboard = navigator.clipboard as Clipboard | undefined;
+/**
+ * Copies text to the clipboard and resolves to whether it worked.
+ *
+ * The asynchronous clipboard API can take a while (a permission prompt, for example).
+ * `isCurrent` is asked once it settles: a request that has been superseded resolves to
+ * `null` and does nothing further, so it cannot overwrite what a newer request copied.
+ */
+export async function copyText(text: string, isCurrent: () => boolean): Promise<boolean | null> {
+  let clipboard: Clipboard | undefined;
+  try {
+    clipboard = navigator.clipboard;
+  } catch {
+    clipboard = undefined;
+  }
   if (clipboard && typeof clipboard.writeText === "function") {
     try {
       await clipboard.writeText(text);
-      return true;
+      return isCurrent() ? true : null;
     } catch {
+      if (!isCurrent()) return null;
       // Fall through to the selection-based path.
     }
   }

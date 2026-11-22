@@ -29,11 +29,21 @@ import { buildGraphScene, computeGraphGeometry, type GraphGeometry } from "../..
 import { buildGraphHighlights, rootClass, type HighlightMode, type HighlightSeries } from "../../presentation/presentation/highlight";
 import { NOTATIONS, buildComparisonSheet, buildScoreSheet, type Notation, type SheetGame } from "../../presentation/presentation/score_sheet";
 import { graphTooltipTargets } from "../../presentation/presentation/tooltip";
-import { createElement, replaceChildren, type ElementSpec } from "../../presentation/render/chart";
+import { createElement, replaceChildren, updateElement, type ElementSpec } from "../../presentation/render/chart";
 import { stylesheet } from "../../styles";
 import { VIEW_LAYOUTS, mountShell, type Shell, type ViewLayout } from "../view/shell";
 import { TooltipLayer } from "../view/tooltip";
-import { RENDERER_MARKER, copyText, preferredLanguages, prepareDocument, readStored, replaceQuery, rootProperty, writeStored } from "./browser";
+import {
+  RENDERER_MARKER,
+  copyText,
+  preferredLanguages,
+  prepareDocument,
+  readStored,
+  replaceUrl,
+  rootProperty,
+  urlWithQuery,
+  writeStored,
+} from "./browser";
 
 const LAYOUT_KEY = "bowling.layout";
 const NOTATION_KEY = "bowling.notation";
@@ -91,9 +101,12 @@ export class Controller {
   /** Single-game input kept while comparison mode is on. */
   private singleText = "";
 
+  /** Query string that still has to reach the address bar. */
   private pendingQuery: string | null = null;
   private urlTimer: number | undefined;
   private copyTimer: number | undefined;
+  /** Number of the latest copy request; earlier ones no longer report back. */
+  private copyRequest = 0;
 
   constructor() {
     const root = prepareDocument(stylesheet());
@@ -111,6 +124,7 @@ export class Controller {
     this.shell.input.value = this.text;
     this.bindEvents();
     this.render();
+    this.scheduleUrl();
   }
 
   private requireColor(name: string): string {
@@ -131,10 +145,10 @@ export class Controller {
       if (!this.comparing && event.key === "Enter" && !event.isComposing) event.preventDefault();
     });
     shell.clearButton.addEventListener("click", () => {
-      this.setText("");
+      this.change({ text: "" });
       shell.input.focus();
     });
-    shell.copyButton.addEventListener("click", () => void this.copyUrl());
+    shell.copyButton.addEventListener("click", () => this.copyUrl());
     shell.compareButton.addEventListener("click", () => this.setComparing(true));
     shell.exitCompareButton.addEventListener("click", () => this.setComparing(false));
 
@@ -149,12 +163,16 @@ export class Controller {
     this.bindChoice(shell.layoutButtons, VIEW_LAYOUTS, () => this.layout, (value) => this.setLayout(value));
   }
 
-  /** Wires a group of mutually exclusive buttons: click selects, left/right arrows cycle. */
+  /**
+   * Wires a group of mutually exclusive buttons: click selects, left/right arrows
+   * cycle. `select` reports whether the choice is now in effect; focus only follows a
+   * choice that is.
+   */
   private bindChoice<T extends string>(
     buttons: ReadonlyMap<T, HTMLButtonElement>,
     order: readonly T[],
     current: () => T,
-    select: (value: T) => void,
+    select: (value: T) => boolean,
   ): void {
     for (const [value, button] of buttons) {
       button.addEventListener("click", () => select(value));
@@ -163,100 +181,127 @@ export class Controller {
         event.preventDefault();
         const step = event.key === "ArrowRight" ? 1 : order.length - 1;
         const next = order[(order.indexOf(current()) + step) % order.length]!;
-        select(next);
-        buttons.get(next)?.focus();
+        if (select(next)) buttons.get(next)?.focus();
       });
     }
   }
 
   private onInput(): void {
     const input = this.shell.input;
-    const value = input.value;
-    if (this.comparing) {
-      this.setText(value);
-      return;
+    let text = input.value;
+    if (!this.comparing) {
+      const collapsed = singleLine(text);
+      if (collapsed !== text) {
+        // Keep the caret where it was, measured in the collapsed text.
+        const caret = input.selectionStart;
+        const position = caret === null ? null : singleLine(text.slice(0, caret)).length;
+        input.value = collapsed;
+        if (position !== null) input.setSelectionRange(position, position);
+        text = collapsed;
+      }
     }
-    const normalized = singleLine(value);
-    if (normalized === value) {
-      this.setText(value);
-      return;
-    }
-    // Keep the caret where it was, measured in the normalised text.
-    const caret = input.selectionStart;
-    this.setText(normalized);
-    if (caret !== null) {
-      const position = singleLine(value.slice(0, caret)).length;
-      input.setSelectionRange(position, position);
-    }
+    this.change({ text });
   }
 
   // ---------------------------------------------------------------- state changes
 
-  private setText(text: string): void {
+  /**
+   * Changes what is shown and shared: the input, the scoring rule or the mode. Returns
+   * false when nothing changed, or when the view for a new scoring rule could not be
+   * built; the current view then stays as it is.
+   */
+  private change(next: { text?: string; view?: ScoringRule; comparing?: boolean }): boolean {
+    const text = next.text ?? this.text;
+    const view = next.view ?? this.view;
+    const comparing = next.comparing ?? this.comparing;
+    if (text === this.text && view === this.view && comparing === this.comparing) return false;
+    if (view !== this.view) {
+      try {
+        this.slot(view);
+      } catch (error) {
+        console.error(error);
+        return false;
+      }
+    }
     this.text = text;
+    this.view = view;
+    this.comparing = comparing;
     if (this.shell.input.value !== text) this.shell.input.value = text;
     this.render();
+    this.scheduleUrl();
+    return true;
   }
 
-  private setView(view: ScoringRule): void {
-    if (view === this.view) return;
-    this.view = view;
-    this.render();
+  private setView(view: ScoringRule): boolean {
+    this.change({ view });
+    return this.view === view;
   }
 
-  private setNotation(notation: Notation): void {
-    if (notation === this.notation) return;
-    this.notation = notation;
-    writeStored(NOTATION_KEY, notation);
-    this.render();
+  private setNotation(notation: Notation): boolean {
+    if (notation !== this.notation) {
+      this.notation = notation;
+      writeStored(NOTATION_KEY, notation);
+      this.render();
+    }
+    return true;
   }
 
-  private setLayout(layout: ViewLayout): void {
-    if (layout === this.layout) return;
-    this.layout = layout;
-    writeStored(LAYOUT_KEY, layout);
-    this.render();
+  private setLayout(layout: ViewLayout): boolean {
+    if (layout !== this.layout) {
+      this.layout = layout;
+      writeStored(LAYOUT_KEY, layout);
+      this.render();
+    }
+    return true;
   }
 
   private setComparing(comparing: boolean): void {
     if (comparing === this.comparing) return;
+    const { compareButton, exitCompareButton } = this.shell;
+    const [pressed, replacement] = comparing ? [compareButton, exitCompareButton] : [exitCompareButton, compareButton];
+    // The pressed button is about to be hidden; focus that rests on it moves along.
+    const hadFocus = document.activeElement === pressed;
     if (comparing) {
       this.singleText = this.text;
-      this.comparing = true;
-      this.setText("");
-      this.shell.exitCompareButton.focus();
+      this.change({ comparing, text: "" });
     } else {
       // A comparison of exactly one game carries over as the single game.
       const games = this.entries();
-      this.comparing = false;
-      this.setText(games.length === 1 ? games[0]!.text : this.singleText);
-      this.shell.compareButton.focus();
+      this.change({ comparing, text: games.length === 1 ? games[0]!.text : this.singleText });
     }
+    if (hadFocus) replacement.focus();
   }
 
   private applySample(id: string): void {
     if (this.comparing) return;
     const randoms = Array.from({ length: SAMPLE_RANDOM_COUNT }, () => Math.random());
-    this.setText(generateSample(id, randoms));
+    this.change({ text: generateSample(id, randoms) });
   }
 
   private applyPreset(id: string): void {
     const preset = findPreset(id);
     if (!preset || !this.comparing) return;
-    this.setText(togglePreset(preset, this.text, this.palette));
+    this.change({ text: togglePreset(preset, this.text, this.palette) });
   }
 
-  private async copyUrl(): Promise<void> {
-    this.flushUrl();
-    const copied = await copyText(window.location.href);
+  private copyUrl(): void {
+    this.syncUrl();
+    // A new request starts from a clean slate and is the only one that may report back.
+    const request = ++this.copyRequest;
+    this.showCopyFeedback(null);
+    const isCurrent = (): boolean => request === this.copyRequest;
+    void copyText(urlWithQuery(this.currentQuery()), isCurrent).then((copied) => {
+      if (copied !== null && isCurrent()) this.showCopyFeedback(copied);
+    });
+  }
+
+  /** Shows the outcome of a copy for a moment; `null` returns to the idle label. */
+  private showCopyFeedback(copied: boolean | null): void {
     const button = this.shell.copyButton;
-    button.textContent = copied ? COPY_LABEL.copied : COPY_LABEL.failed;
-    button.classList.toggle("copied", copied);
     window.clearTimeout(this.copyTimer);
-    this.copyTimer = window.setTimeout(() => {
-      button.textContent = COPY_LABEL.idle;
-      button.classList.remove("copied");
-    }, COPY_FEEDBACK_MS);
+    button.textContent = copied === null ? COPY_LABEL.idle : copied ? COPY_LABEL.copied : COPY_LABEL.failed;
+    button.classList.toggle("copied", copied === true);
+    if (copied !== null) this.copyTimer = window.setTimeout(() => this.showCopyFeedback(null), COPY_FEEDBACK_MS);
   }
 
   // ---------------------------------------------------------------- rendering
@@ -272,7 +317,6 @@ export class Controller {
     this.renderControls(entries);
     this.renderStatus(entries);
     this.renderViews(entries);
-    this.scheduleUrl(entries);
   }
 
   private renderControls(entries: readonly GameEntry[]): void {
@@ -315,7 +359,9 @@ export class Controller {
     const sheet = this.comparing
       ? buildComparisonSheet(this.view, games, this.notation)
       : buildScoreSheet(this.view, games[0] ?? null, this.notation);
-    replaceChildren(document, this.shell.status, [sheet]);
+    // The sheet element is kept between updates, so that it fades when it fills or empties.
+    const current = this.shell.status.firstElementChild;
+    if (!current || !updateElement(document, current, sheet)) replaceChildren(document, this.shell.status, [sheet]);
 
     const messages: string[] = [];
     entries.forEach((entry, index) => {
@@ -337,7 +383,8 @@ export class Controller {
       hitRadius: Number(rootProperty("--tooltip-hit-radius")),
       margin: Number(rootProperty("--tooltip-margin")),
     };
-    const mount = (host: HTMLElement, marker: string, spec: ElementSpec): { slot: HTMLElement; tooltip: TooltipLayer } => {
+    // Both scenes are built before either is attached, so a failure leaves no half view behind.
+    const build = (marker: string, spec: ElementSpec): { slot: HTMLElement; tooltip: TooltipLayer } => {
       const slot = document.createElement("div");
       const wrap = document.createElement("div");
       wrap.setAttribute("class", "responsive-svg-wrap");
@@ -349,12 +396,13 @@ export class Controller {
       tooltip.setAttribute("class", "graph-tooltip");
       wrap.append(scene, tooltip);
       slot.appendChild(wrap);
-      host.appendChild(slot);
       const [x = 0, y = 0, width = 0, height = 0] = (scene.getAttribute("viewBox") ?? "").split(/\s+/).map(Number);
       return { slot, tooltip: new TooltipLayer(wrap, scene, tooltip, { viewBox: [x, y, width, height], ...tooltipOptions }) };
     };
-    const graphView = mount(this.shell.graphHost, "data-bowling-renderer", buildGraphScene(graphGeometry));
-    const framesView = mount(this.shell.framesHost, "data-bowling-frame-renderer", buildFramesScene(framesGeometry));
+    const graphView = build("data-bowling-renderer", buildGraphScene(graphGeometry));
+    const framesView = build("data-bowling-frame-renderer", buildFramesScene(framesGeometry));
+    this.shell.graphHost.appendChild(graphView.slot);
+    this.shell.framesHost.appendChild(framesView.slot);
 
     const created: ViewSlot = {
       graph,
@@ -403,20 +451,38 @@ export class Controller {
 
   // ---------------------------------------------------------------- URL
 
-  private scheduleUrl(entries: readonly GameEntry[]): void {
-    this.pendingQuery = buildQuery(
-      entries.map((entry) => ({ rolls: entry.rolls, color: entry.color })),
+  /** Query string for the current input and scoring rule. */
+  private currentQuery(): string {
+    return buildQuery(
+      this.entries().map((entry) => ({ rolls: entry.rolls, color: entry.color })),
       this.view,
       this.defaultColor,
     );
-    window.clearTimeout(this.urlTimer);
-    this.urlTimer = window.setTimeout(() => this.flushUrl(), URL_SYNC_DELAY_MS);
   }
 
-  private flushUrl(): void {
+  /** Lets the address bar follow the state once the input has been quiet for a moment. */
+  private scheduleUrl(): void {
+    this.pendingQuery = this.currentQuery();
+    window.clearTimeout(this.urlTimer);
+    this.urlTimer = window.setTimeout(() => this.syncUrl(), URL_SYNC_DELAY_MS);
+  }
+
+  /**
+   * Writes the pending query to the address bar. Where the browser refuses, the query
+   * stays pending: the next change replaces it, and copying tries again.
+   */
+  private syncUrl(): void {
     window.clearTimeout(this.urlTimer);
     if (this.pendingQuery === null) return;
-    replaceQuery(this.pendingQuery);
+    const url = urlWithQuery(this.pendingQuery);
+    if (url !== window.location.href) {
+      try {
+        replaceUrl(url);
+      } catch (error) {
+        console.error(error);
+        return;
+      }
+    }
     this.pendingQuery = null;
   }
 }

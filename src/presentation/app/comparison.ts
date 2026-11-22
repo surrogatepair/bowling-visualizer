@@ -16,19 +16,34 @@ export interface GameEntry {
   readonly error: NotationError | null;
 }
 
-const COLOR_SUFFIX = /#([0-9a-fA-F]{6})\s*$/;
+/**
+ * Characters ignored around a line and around its colour: the Unicode `White_Space`
+ * set. Spelled out because `String.prototype.trim` differs from it (it also strips
+ * U+FEFF and keeps U+0085).
+ */
+const BLANK = "\\t-\\r \\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000";
+const LEADING_BLANKS = new RegExp(`^[${BLANK}]+`);
+const TRAILING_BLANKS = new RegExp(`[${BLANK}]+$`);
+const COLOR_SUFFIX = /#([0-9a-fA-F]{6})$/;
+
+export function trimEnd(text: string): string {
+  return text.replace(TRAILING_BLANKS, "");
+}
+
+export function trim(text: string): string {
+  return trimEnd(text).replace(LEADING_BLANKS, "");
+}
 
 /** Parses one line: roll notation with an optional trailing `#rrggbb` colour. */
 export function parseGameLine(line: string): GameEntry {
-  let notation = line;
+  let text = trim(line);
   let color: string | null = null;
-  const match = COLOR_SUFFIX.exec(line);
+  const match = COLOR_SUFFIX.exec(text);
   if (match) {
     color = parseHexDigits(match[1]!);
-    notation = line.slice(0, match.index);
+    text = trimEnd(text.slice(0, match.index));
   }
-  const result = parseRolls(notation);
-  const text = notation.trim();
+  const result = parseRolls(text);
   return result.ok ? { text, rolls: result.rolls, color, error: null } : { text, rolls: result.error.rolls, color, error: result.error };
 }
 
@@ -36,7 +51,7 @@ export function parseGameLine(line: string): GameEntry {
 export function parseComparisonInput(text: string): GameEntry[] {
   return text
     .split("\n")
-    .filter((line) => line.trim() !== "")
+    .filter((line) => trim(line) !== "")
     .map(parseGameLine);
 }
 
@@ -188,7 +203,7 @@ export function togglePreset(preset: ComparisonPreset, text: string, palette: Pr
   for (const line of text.split("\n")) {
     const entry = parseGameLine(line);
     if (!isGame(entry)) continue;
-    lines.push(line.trim());
+    lines.push(trim(line));
     keys.push(rollsKey(entry));
   }
   const present = new Set(keys);
