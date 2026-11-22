@@ -97,6 +97,17 @@ export function graphTooltipTargets(geometry: GraphGeometry, traces: readonly Hi
   return targets;
 }
 
+/**
+ * The route of a game in words, one line per node: what the tooltips say, for readers
+ * who cannot point at the graph.
+ */
+export function describeRoute(geometry: GraphGeometry, trace: HighlightTrace): string[] {
+  return graphTooltipTargets(geometry, [trace]).map(({ content }) => {
+    const details = content.rows.map(([label, value]) => `${label} ${value}`).join(", ");
+    return `${content.title}: ${details}`;
+  });
+}
+
 /** Adds a row to existing content. */
 export function withRow(content: TooltipContent, label: string, value: string): TooltipContent {
   return { title: content.title, rows: [...content.rows, [label, value]] };

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { foldText } from "../src/core/notation";
 import { scoreGame } from "../src/core/scoring/frames";
 import type { ScoringRule } from "../src/core/scoring/graph/types";
 import { parseGameLine } from "../src/presentation/app/comparison";
@@ -43,7 +44,10 @@ describe("scoreGame", () => {
  * total, the total and the error message.
  */
 describe("score sheets recorded from the original build", () => {
-  it.each(recorded as RecordedGame[])("$rule: $input", (game) => {
+  // Full-width and dash look-alikes were errors in the original; this build reads them.
+  const comparable = (recorded as RecordedGame[]).filter((game) => foldText(game.input) === game.input && !game.input.includes("\u2014"));
+
+  it.each(comparable)("$rule: $input", (game) => {
     const entry = parseGameLine(game.input);
     const score = scoreGame(game.rule as ScoringRule, entry.rolls);
     const shown = entry.rolls.length > 0 || entry.error !== null;

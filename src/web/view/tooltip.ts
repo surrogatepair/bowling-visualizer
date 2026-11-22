@@ -69,6 +69,16 @@ export class TooltipLayer {
     svg.addEventListener("pointermove", onPointer, listenerOptions);
     svg.addEventListener("pointerdown", onPointer, listenerOptions);
     svg.addEventListener("pointerleave", onLeave, listenerOptions);
+    // A tooltip opened by touch stays when the finger lifts; touching anything else closes it.
+    svg.ownerDocument.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (event.target instanceof Node && svg.contains(event.target)) return;
+        this.pointer = null;
+        this.hide();
+      },
+      { passive: true, capture: true },
+    );
   }
 
   /** Replaces the targets, e.g. after the highlighted games changed. */

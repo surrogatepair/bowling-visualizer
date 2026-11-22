@@ -43,4 +43,23 @@ describe("parseRolls", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.rolls).toEqual([10, 9, 1]);
   });
+
+  it("reads full-width characters as their plain counterparts", () => {
+    expect(rolls("Ｘ　９／　８１｜ｇ－")).toEqual([10, 9, 1, 8, 1, 0, 0]);
+    expect(rolls("９ー")).toEqual([9, 0]);
+  });
+
+  it("reads dash look-alikes as misses, an em dash as two", () => {
+    for (const dash of ["\u2010", "\u2011", "\u2013", "\u2015", "\u2212", "\u30fc", "\uff0d"]) expect(rolls(`9${dash}`), dash).toEqual([9, 0]);
+    expect(rolls("\u2014 9\u2014")).toEqual([0, 0, 9, 0, 0]);
+    // The second half of an em dash can be the roll that does not fit.
+    const result = parseRolls("X X X X X X X X X 9\u2014");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect([result.error.message, result.error.position, result.error.rolls.length]).toEqual(["input continues after the game is complete", 19, 11]);
+  });
+
+  it("still rejects other characters, naming them as typed", () => {
+    expect(error("9\u00e9")).toBe('unexpected character "\u00e9"');
+    expect(error("X,9")).toBe('unexpected character ","');
+  });
 });

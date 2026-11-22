@@ -14,6 +14,7 @@ import {
   isPresetActive,
   parseComparisonInput,
   parseGameLine,
+  resumeComparison,
   togglePreset,
   type GameEntry,
   type PresetColor,
@@ -27,9 +28,16 @@ import { buildPanelHighlights, coverSeries } from "../../presentation/presentati
 import { GRAPH_SVG_HEIGHT, GRAPH_SVG_WIDTH, createGraphLayout } from "../../presentation/presentation/graph";
 import { buildGraphScene, computeGraphGeometry, type GraphGeometry } from "../../presentation/presentation/graph_scene";
 import { buildGraphHighlights, rootClass, type HighlightMode, type HighlightSeries } from "../../presentation/presentation/highlight";
-import { NOTATIONS, buildComparisonSheet, buildScoreSheet, type Notation, type SheetGame } from "../../presentation/presentation/score_sheet";
-import { graphTooltipTargets } from "../../presentation/presentation/tooltip";
-import type { ElementSpec } from "../../presentation/render/chart";
+import {
+  NOTATIONS,
+  buildComparisonSheet,
+  buildScoreSheet,
+  buildScoreTable,
+  type Notation,
+  type SheetGame,
+} from "../../presentation/presentation/score_sheet";
+import { describeRoute, graphTooltipTargets } from "../../presentation/presentation/tooltip";
+import { el, type ElementSpec } from "../../presentation/render/chart";
 import { stylesheet } from "../../styles";
 import { createElement, replaceChildren, updateElement } from "../view/dom";
 import { VIEW_LAYOUTS, mountShell, type Shell, type ViewLayout } from "../view/shell";
@@ -40,6 +48,7 @@ import {
   preferredLanguages,
   prepareDocument,
   readStored,
+  replaceText,
   replaceUrl,
   rootProperty,
   urlWithQuery,
@@ -66,6 +75,8 @@ interface ViewSlot {
   readonly panelHighlights: readonly Element[];
   readonly graphTooltip: TooltipLayer;
   readonly framesTooltip: TooltipLayer;
+  /** Holds the routes of the games in words, for screen readers. */
+  readonly graphRoutes: HTMLElement;
 }
 
 /** Picks the roll notation for a first visit: figures for Japanese users, text otherwise. */
@@ -101,6 +112,8 @@ export class Controller {
   private text: string;
   /** Single-game input kept while comparison mode is on. */
   private singleText = "";
+  /** Comparison input kept while single-game mode is on. */
+  private comparisonText = "";
 
   /** Query string that still has to reach the address bar. */
   private pendingQuery: string | null = null;
@@ -146,7 +159,7 @@ export class Controller {
       if (!this.comparing && event.key === "Enter" && !event.isComposing) event.preventDefault();
     });
     shell.clearButton.addEventListener("click", () => {
-      this.change({ text: "" });
+      this.replace("");
       shell.input.focus();
     });
     shell.copyButton.addEventListener("click", () => this.copyUrl());
@@ -263,11 +276,13 @@ export class Controller {
     // The pressed button is about to be hidden; focus that rests on it moves along.
     const hadFocus = document.activeElement === pressed;
     if (comparing) {
+      // The game being looked at joins whatever was compared before.
       this.singleText = this.text;
-      this.change({ comparing, text: "" });
+      this.change({ comparing, text: resumeComparison(this.comparisonText, this.text) });
     } else {
       // A comparison of exactly one game carries over as the single game.
       const games = this.entries();
+      this.comparisonText = this.text;
       this.change({ comparing, text: games.length === 1 ? games[0]!.text : this.singleText });
     }
     if (hadFocus) replacement.focus();
@@ -276,13 +291,21 @@ export class Controller {
   private applySample(id: string): void {
     if (this.comparing) return;
     const randoms = Array.from({ length: SAMPLE_RANDOM_COUNT }, () => Math.random());
-    this.change({ text: generateSample(id, randoms) });
+    this.replace(generateSample(id, randoms));
   }
 
   private applyPreset(id: string): void {
     const preset = findPreset(id);
     if (!preset || !this.comparing) return;
-    this.change({ text: togglePreset(preset, this.text, this.palette) });
+    this.replace(togglePreset(preset, this.text, this.palette));
+  }
+
+  /** Replaces the input with text the app supplies, in a way the browser can undo. */
+  private replace(text: string): void {
+    // Where the replacement goes through the editing commands the input reports the
+    // change itself; `change` covers the cases where it does not.
+    replaceText(this.shell.input, text);
+    this.change({ text });
   }
 
   private copyUrl(): void {
@@ -361,8 +384,12 @@ export class Controller {
       ? buildComparisonSheet(this.view, games, this.notation)
       : buildScoreSheet(this.view, games[0] ?? null, this.notation);
     // The sheet element is kept between updates, so that it fades when it fills or empties.
-    const current = this.shell.status.firstElementChild;
-    if (!current || !updateElement(document, current, sheet)) replaceChildren(document, this.shell.status, [sheet]);
+    const status = this.shell.status;
+    const current = status.firstElementChild;
+    if (!current || !updateElement(document, current, sheet)) replaceChildren(document, status, [sheet]);
+    while (status.childElementCount > 1) status.lastElementChild!.remove();
+    const table = buildScoreTable(games, this.comparing);
+    if (table) status.appendChild(createElement(document, table));
 
     const messages: string[] = [];
     entries.forEach((entry, index) => {
@@ -402,6 +429,9 @@ export class Controller {
     };
     const graphView = build("data-bowling-renderer", buildGraphScene(graphGeometry));
     const framesView = build("data-bowling-frame-renderer", buildFramesScene(framesGeometry));
+    const graphRoutes = document.createElement("div");
+    graphRoutes.setAttribute("class", "visually-hidden");
+    graphView.slot.appendChild(graphRoutes);
     this.shell.graphHost.appendChild(graphView.slot);
     this.shell.framesHost.appendChild(framesView.slot);
 
@@ -415,6 +445,7 @@ export class Controller {
       panelHighlights: Array.from(framesView.slot.querySelectorAll("g.highlight")),
       graphTooltip: graphView.tooltip,
       framesTooltip: framesView.tooltip,
+      graphRoutes,
     };
     this.slots.set(rule, created);
     return created;
@@ -447,6 +478,16 @@ export class Controller {
     });
 
     active.graphTooltip.setTargets(graphTooltipTargets(active.graphGeometry, series.map((item) => item.trace)));
+    replaceChildren(
+      document,
+      active.graphRoutes,
+      series.flatMap((item, index) => {
+        const steps = describeRoute(active.graphGeometry, item.trace);
+        if (steps.length === 0) return [];
+        const label = series.length > 1 ? `Game ${index + 1}: route through the state graph` : "Route through the state graph";
+        return [el("ol", [["aria-label", label]], steps.map((step) => el("li", [], [step])))];
+      }),
+    );
     active.framesTooltip.setTargets(panelTooltipTargets(active.framesGeometry, coverages));
   }
 

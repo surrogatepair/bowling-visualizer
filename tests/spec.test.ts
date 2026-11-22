@@ -59,7 +59,8 @@ describe("notation and validation", () => {
       expect(entry.error, JSON.stringify(line)).toBeNull();
       expect(entry.text).toBe("X 9/");
     }
-    expect(parseGameLine("X　9/").error?.message).toBe('unexpected character "　"');
+    // Inside a line it separates rolls, like a plain space.
+    expect(parseGameLine("X　9/").rolls).toEqual([10, 9, 1]);
     // A byte order mark is not white space.
     expect(parseGameLine("X 9/﻿").error).not.toBeNull();
     expect(parseGameLine("X #00ff00﻿").color).toBeNull();

@@ -9,7 +9,9 @@ import { frameRollsText } from "../src/presentation/presentation/frame_panel/geo
 import { clientToSvg, nearestTarget, placeTooltip } from "../src/presentation/presentation/frame_panel/interaction";
 import { createGraphLayout } from "../src/presentation/presentation/graph";
 import { buildGraphScene, computeGraphGeometry } from "../src/presentation/presentation/graph_scene";
-import { graphTooltipTargets, type TooltipTarget } from "../src/presentation/presentation/tooltip";
+import { scoreGame } from "../src/core/scoring/frames";
+import { buildScoreTable } from "../src/presentation/presentation/score_sheet";
+import { describeRoute, graphTooltipTargets, type TooltipTarget } from "../src/presentation/presentation/tooltip";
 import type { ElementSpec } from "../src/presentation/render/chart";
 
 /** 64-bit FNV-1a over the serialized scene, as hex. */
@@ -95,5 +97,48 @@ describe("tooltips", () => {
     expect(placeTooltip([50, 60], size, container, 12)).toEqual([62, 72]);
     expect(placeTooltip([350, 280], size, container, 12)).toEqual([238, 218]);
     expect(placeTooltip([90, 20], { width: 390, height: 290 }, container, 12)).toEqual([0, 0]);
+  });
+});
+
+describe("text alternatives", () => {
+  /** Rows of a table description as arrays of cell texts. */
+  function cells(table: ElementSpec): string[][] {
+    const rows: string[][] = [];
+    const visit = (spec: ElementSpec): void => {
+      if (spec.tag === "tr") rows.push(spec.children.map((cell) => (typeof cell === "string" ? cell : cell.children.join(""))));
+      else for (const child of spec.children) if (typeof child !== "string") visit(child);
+    };
+    visit(table);
+    return rows;
+  }
+  const game = (text: string) => {
+    const entry = parseGameLine(text);
+    return { score: scoreGame("standard", entry.rolls), error: entry.error?.message ?? null };
+  };
+
+  it("give the score sheet as a table", () => {
+    expect(buildScoreTable([], false)).toBeNull();
+    const rows = cells(buildScoreTable([game("X 9/ 81 7")], false)!);
+    expect(rows[0]!.slice(0, 3)).toEqual(["", "Frame 1", "Frame 2"]);
+    expect(rows[1]).toEqual(["rolls", "strike", "9, spare", "8, 1", "7", "", "", "", "", "", "", ""]);
+    expect(rows[2]).toEqual(["score", "20", "38", "47", "", "", "", "", "", "", "", "54 so far"]);
+  });
+
+  it("name the games of a comparison and report their errors", () => {
+    const rows = cells(buildScoreTable([game("X X X X X X X X X XXX"), game("9/ /")], true)!);
+    expect(rows[2]!.at(-1)).toBe("300");
+    expect(rows.slice(3).map((row) => row[0])).toEqual(["Game 2 rolls", "Game 2 score", "Game 2 error"]);
+    expect(rows[5]![1]).toBe('"/" (spare) cannot appear as the first roll of a frame');
+  });
+
+  it("describe the route of a game node by node", () => {
+    const geometry = graphGeometry("standard");
+    const route = describeRoute(geometry, traceRolls(geometry.graph, [10, 9]));
+    expect(route).toEqual([
+      "Start: Score 0",
+      "Frame 1 - end: Score 10, State Strike bonus pending (+2 rolls)",
+      "Frame 2 - after R1: R1 9 pins, Score 28, Carry from prev Yes",
+    ]);
+    expect(describeRoute(geometry, traceRolls(geometry.graph, []))).toEqual([]);
   });
 });

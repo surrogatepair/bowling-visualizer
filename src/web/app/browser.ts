@@ -2,10 +2,9 @@
  * Thin wrappers around browser facilities, so the controller does not have to deal
  * with missing APIs or storage that throws.
  */
+import { APP_TITLE } from "../../presentation/presentation/labels";
 import { el, type ElementSpec } from "../../presentation/render/chart";
 import { createElement } from "../view/dom";
-
-export const APP_TITLE = "Bowling Score State Visualizer";
 
 /** Reads a value from local storage; unavailable storage reads as empty. */
 export function readStored(key: string): string | null {
@@ -139,4 +138,37 @@ export async function copyText(text: string, isCurrent: () => boolean): Promise<
     }
   }
   return copyWithSelection(text);
+}
+
+/**
+ * Replaces the whole text of `input` the way typing would, so that the browser's undo
+ * brings the previous text back. Editing commands only reach the focused element:
+ * focus is borrowed for the moment and handed back. Falls back to assigning the value,
+ * which the browser cannot undo.
+ */
+export function replaceText(input: HTMLTextAreaElement, text: string): void {
+  if (input.value === text) return;
+  const focused = document.activeElement;
+  const borrowed = focused !== input;
+  const inputMode = input.getAttribute("inputmode");
+  try {
+    if (borrowed) {
+      // Keeps an on-screen keyboard from appearing while focus passes through.
+      input.setAttribute("inputmode", "none");
+      input.focus({ preventScroll: true });
+    }
+    input.select();
+    if (text === "") document.execCommand("delete");
+    else document.execCommand("insertText", false, text);
+  } catch {
+    // Not available here; the assignment below does the job.
+  } finally {
+    if (borrowed) {
+      if (focused instanceof HTMLElement) focused.focus({ preventScroll: true });
+      else input.blur();
+      if (inputMode === null) input.removeAttribute("inputmode");
+      else input.setAttribute("inputmode", inputMode);
+    }
+  }
+  if (input.value !== text) input.value = text;
 }

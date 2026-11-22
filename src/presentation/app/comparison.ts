@@ -2,7 +2,7 @@
  * Comparison mode: several games entered one per line, each optionally coloured, and
  * the preset families of games that can be toggled into the input.
  */
-import { parseRolls, type NotationError } from "../../core/notation";
+import { foldText, parseRolls, type NotationError } from "../../core/notation";
 import { parseHexDigits } from "./hex_color";
 
 /** One game as entered by the user. */
@@ -36,13 +36,17 @@ export function trim(text: string): string {
 
 /** Parses one line: roll notation with an optional trailing `#rrggbb` colour. */
 export function parseGameLine(line: string): GameEntry {
-  let text = trim(line);
+  const trimmed = trim(line);
+  // Full-width forms count as their plain counterparts; folding keeps every position.
+  const folded = foldText(trimmed);
+  let end = folded.length;
   let color: string | null = null;
-  const match = COLOR_SUFFIX.exec(text);
+  const match = COLOR_SUFFIX.exec(folded);
   if (match) {
     color = parseHexDigits(match[1]!);
-    text = trimEnd(text.slice(0, match.index));
+    end = trimEnd(folded.slice(0, match.index)).length;
   }
+  const text = trimmed.slice(0, end);
   const result = parseRolls(text);
   return result.ok ? { text, rolls: result.rolls, color, error: null } : { text, rolls: result.error.rolls, color, error: result.error };
 }
@@ -53,6 +57,26 @@ export function parseComparisonInput(text: string): GameEntry[] {
     .split("\n")
     .filter((line) => trim(line) !== "")
     .map(parseGameLine);
+}
+
+/** A line is a game once it has a roll or at least fails to parse; blank and colour-only lines are not. */
+export function isGame(entry: GameEntry): boolean {
+  return entry.rolls.length > 0 || entry.error !== null;
+}
+
+/**
+ * The input to start comparison mode with: the games of the previous comparison, plus
+ * the game entered in single-game mode unless it is already among them.
+ */
+export function resumeComparison(previous: string, single: string): string {
+  const game = parseGameLine(single);
+  if (!isGame(game)) return previous;
+  const earlier = parseComparisonInput(previous).filter(isGame);
+  if (earlier.length === 0) return single;
+  const same = (other: GameEntry): boolean =>
+    game.error === null && other.error === null ? rollsKey(other) === rollsKey(game) : other.text === game.text;
+  if (earlier.some(same)) return previous;
+  return `${previous.replace(/\n+$/, "")}\n${trim(single)}`;
 }
 
 /** CSS custom properties that hold the preset colours. */
@@ -175,11 +199,6 @@ function presetRolls(preset: ComparisonPreset): string[] {
 
 function rollsKey(entry: GameEntry): string {
   return entry.error === null ? entry.rolls.join(",") : "";
-}
-
-/** A line is a game once it has a roll or at least fails to parse; blank and colour-only lines are not. */
-export function isGame(entry: GameEntry): boolean {
-  return entry.rolls.length > 0 || entry.error !== null;
 }
 
 /**

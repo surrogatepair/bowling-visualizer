@@ -26,3 +26,6 @@ export const PENDING_DESCRIPTION: Record<Pending, string> = {
 export function categoryMarker(category: Category): "end" | "mid" {
   return category === "mid_no_carry" || category === "mid_carry" ? "mid" : "end";
 }
+
+/** Name of the application: the document title and the page heading. */
+export const APP_TITLE = "Bowling Score State Visualizer";

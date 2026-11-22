@@ -5,7 +5,7 @@
 import { SCORING_RULES, type ScoringRule } from "../../core/scoring/graph/types";
 import { COMPARISON_PRESETS } from "../../presentation/app/comparison";
 import { SAMPLES } from "../../presentation/app/samples";
-import { RULE_TITLE } from "../../presentation/presentation/labels";
+import { APP_TITLE, RULE_TITLE } from "../../presentation/presentation/labels";
 import { NOTATIONS, type Notation } from "../../presentation/presentation/score_sheet";
 import { el, type ElementSpec } from "../../presentation/render/chart";
 import { createElement } from "./dom";
@@ -13,9 +13,6 @@ import { createElement } from "./dom";
 export type ViewLayout = "vertical" | "horizontal";
 
 export const VIEW_LAYOUTS: readonly ViewLayout[] = ["vertical", "horizontal"];
-
-const INPUT_HELP =
-  "Use bowling notation: X, /, 0-9, -, G, F, with spaces or | as separators; end a line with #rrggbb to color it. In comparison mode, one line is one game.";
 
 const NOTATION_BUTTONS: Record<Notation, { glyph: string; title: string; label: string }> = {
   mark: { glyph: "◢", title: "Strikes and spares as Japanese-style figures", label: "Figure notation" },
@@ -74,6 +71,7 @@ function shellSpec(): ElementSpec[] {
   });
 
   const header = el("header", [["class", "topbar"]], [
+    el("h1", [["class", "visually-hidden"]], [APP_TITLE]),
     el("div", [["class", "tab-row"]], [
       el("div", [["class", "tabs"], ["role", "tablist"], ["aria-label", "Scoring rule"]], tabs),
       el("div", [["class", "topbar-toggles"]], [
@@ -89,7 +87,6 @@ function shellSpec(): ElementSpec[] {
           ["spellcheck", "false"],
           ["autocomplete", "off"],
           ["autocapitalize", "characters"],
-          ["title", INPUT_HELP],
           ["placeholder", "Enter pins knocked down. e.g. X 5/ 9-"],
           ["aria-label", "Rolls"],
         ]),

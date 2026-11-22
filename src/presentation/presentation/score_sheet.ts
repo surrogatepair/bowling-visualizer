@@ -2,7 +2,7 @@
  * The score sheet: a classic bowling score card for one game, or a stack of rows when
  * several games are compared.
  */
-import { FRAME_COUNT, boxCount, boxesInFrame, type GameScore, type SheetRoll } from "../../core/scoring/frames";
+import { FRAME_COUNT, boxCount, boxesInFrame, type GameScore, type RollMark, type SheetRoll } from "../../core/scoring/frames";
 import type { ScoringRule } from "../../core/scoring/graph/types";
 import { el, group, path, type ChildSpec, type ElementSpec } from "../render/chart";
 
@@ -140,18 +140,64 @@ function invalidBackground(rule: ScoringRule, game: SheetGame | null, rollTop: n
   return [path("score-background score-background--invalid", rect(left, rollTop, framesRight(rule), rollTop + ROLL_ROW_HEIGHT))];
 }
 
-function sheetSvg(className: string, height: number, label: string, children: readonly ElementSpec[]): ElementSpec {
+/** The drawn sheet is for the eye; {@link buildScoreTable} carries the same content for assistive technology. */
+function sheetSvg(className: string, height: number, children: readonly ElementSpec[]): ElementSpec {
   return el(
     "svg",
     [
       ["class", className],
       ["viewBox", `0 0 ${SHEET_WIDTH} ${height}`],
       ["preserveAspectRatio", "xMidYMid meet"],
-      ["role", "img"],
-      ["aria-label", label],
+      ["aria-hidden", "true"],
     ],
     children,
   );
+}
+
+function rollWord(mark: RollMark): string {
+  if (mark.kind === "strike") return "strike";
+  if (mark.kind === "spare") return "spare";
+  return String(mark.pins);
+}
+
+/**
+ * The score sheets as a table that is not shown but read by screen readers: per game a
+ * row of rolls and a row of running totals. Returns null while there is no game.
+ */
+export function buildScoreTable(games: readonly SheetGame[], comparing: boolean): ElementSpec | null {
+  if (games.length === 0) return null;
+  const frames = Array.from({ length: FRAME_COUNT }, (_, index) => index);
+  const header = el("tr", [], [
+    el("td"),
+    ...frames.map((frame) => el("th", [["scope", "col"]], [`Frame ${frame + 1}`])),
+    el("th", [["scope", "col"]], ["Total"]),
+  ]);
+  const rows: ElementSpec[] = [];
+  games.forEach((game, index) => {
+    const label = (name: string): string => (comparing ? `Game ${index + 1} ${name}` : name);
+    const byFrame = new Map(game.score.frames.map((frame) => [frame.frame, frame]));
+    const row = (name: string, cells: readonly string[]): ElementSpec =>
+      el("tr", [], [el("th", [["scope", "row"]], [label(name)]), ...cells.map((cell) => el("td", [], [cell]))]);
+    const started = game.score.frames.length > 0;
+    rows.push(
+      row("rolls", [...frames.map((frame) => (byFrame.get(frame)?.rolls ?? []).map((roll) => rollWord(roll.mark)).join(", ")), ""]),
+      row("score", [
+        ...frames.map((frame) => String(byFrame.get(frame)?.cumulative ?? "")),
+        started ? (game.score.complete ? String(game.score.total) : `${game.score.total} so far`) : "",
+      ]),
+    );
+    if (game.error !== null) {
+      rows.push(el("tr", [], [el("th", [["scope", "row"]], [label("error")]), el("td", [["colspan", FRAME_COUNT + 1]], [game.error])]));
+    }
+  });
+  // A table does not shrink below its content, so the hiding is left to a wrapper.
+  return el("div", [["class", "visually-hidden"]], [
+    el("table", [], [
+      el("caption", [], [comparing ? "Score sheets" : "Score sheet"]),
+      el("thead", [], [header]),
+      el("tbody", [], rows),
+    ]),
+  ]);
 }
 
 /** Score sheet for a single game; `game` is null while nothing has been entered. */
@@ -165,7 +211,7 @@ export function buildScoreSheet(rule: ScoringRule, game: SheetGame | null, notat
     `M0,${rollBottom}H${framesRight(rule)}`,
     ...verticalLines(rule, 0, rollTop, rollBottom, height),
   ].join(" ");
-  return sheetSvg(game ? "score-sheet" : "score-sheet score-sheet-empty", height, "Bowling score sheet", [
+  return sheetSvg(game ? "score-sheet" : "score-sheet score-sheet-empty", height, [
     group("score-scene-root", [
       group("sheet-layer", [
         path("score-background score-background--surface", rect(0, 0, SHEET_WIDTH, height)),
@@ -238,5 +284,5 @@ export function buildComparisonSheet(rule: ScoringRule, games: readonly SheetGam
   );
 
   const className = games.length > 0 ? "score-sheet score-sheet-comparison" : "score-sheet score-sheet-comparison score-sheet-empty";
-  return sheetSvg(className, height, "Bowling score comparison", [header, ...rows, group("comparison-highlights", underlines)]);
+  return sheetSvg(className, height, [header, ...rows, group("comparison-highlights", underlines)]);
 }

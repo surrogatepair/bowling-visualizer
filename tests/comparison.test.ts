@@ -5,6 +5,7 @@ import {
   isPresetActive,
   parseComparisonInput,
   parseGameLine,
+  resumeComparison,
   togglePreset,
   type PresetColor,
 } from "../src/presentation/app/comparison";
@@ -76,5 +77,36 @@ describe("presets", () => {
     const tapSave = findPreset("tap-save")!;
     const entries = parseComparisonInput(togglePreset(tapSave, "", palette));
     for (const id of [tapSave.id, ...tapSave.companions]) expect(isPresetActive(findPreset(id)!, entries)).toBe(true);
+  });
+});
+
+describe("full-width input", () => {
+  it("is understood in rolls and colours, and kept as typed", () => {
+    const entry = parseGameLine("Ｘ ９／ ＃ＦＦ００００");
+    expect(entry.rolls).toEqual([10, 9, 1]);
+    expect(entry.color).toBe("#ff0000");
+    expect(entry.text).toBe("Ｘ ９／");
+    expect(entry.error).toBeNull();
+  });
+});
+
+describe("resumeComparison", () => {
+  it("starts a comparison with the game being looked at", () => {
+    expect(resumeComparison("", "X 9/ 81")).toBe("X 9/ 81");
+    expect(resumeComparison("", "")).toBe("");
+    expect(resumeComparison("\n", " X ")).toBe(" X ");
+  });
+
+  it("returns to the previous comparison and adds a new game to it", () => {
+    expect(resumeComparison("X X\n9/ #00ff00", "")).toBe("X X\n9/ #00ff00");
+    expect(resumeComparison("X X\n9/ #00ff00", " 81 ")).toBe("X X\n9/ #00ff00\n81");
+    expect(resumeComparison("X X\n9/\n\n", "81")).toBe("X X\n9/\n81");
+  });
+
+  it("does not repeat a game that is already compared", () => {
+    expect(resumeComparison("X X\n9/ #00ff00", "9/")).toBe("X X\n9/ #00ff00");
+    expect(resumeComparison("X X\n9/", "x x #123456")).toBe("X X\n9/");
+    expect(resumeComparison("X X\nabc", "abc")).toBe("X X\nabc");
+    expect(resumeComparison("X X\nabc", "abd")).toBe("X X\nabc\nabd");
   });
 });
