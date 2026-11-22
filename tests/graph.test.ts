@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { frameVisits, traceRolls } from "../src/core/app/highlight";
-import { nodeKey } from "../src/core/scoring/graph/types";
-import { buildGraph } from "../src/core/scoring/graph/walker";
+import { nodeKey, type ScoringRule } from "../src/core/scoring/graph/types";
+import { buildGraph, isTerminal } from "../src/core/scoring/graph/walker";
 
 const standard = buildGraph("standard");
 const currentFrame = buildGraph("current-frame");
@@ -24,6 +24,47 @@ describe("buildGraph", () => {
         expect(edge.pins).toBeLessThanOrEqual(10);
       }
     }
+  });
+});
+
+describe("paths through the graph", () => {
+  /** Number of distinct paths from the start node to an end node. */
+  function games(rule: ScoringRule): bigint {
+    const graph = rule === "standard" ? standard : currentFrame;
+    const targets = graph.nodes.map((): number[] => []);
+    const incoming = new Array<number>(graph.nodes.length).fill(0);
+    for (const edge of graph.edges) {
+      targets[edge.from]!.push(edge.to);
+      incoming[edge.to]! += 1;
+    }
+    // Paths are summed in topological order: a node is handled once all its sources are.
+    const paths = new Array<bigint>(graph.nodes.length).fill(0n);
+    paths[0] = 1n;
+    const ready = [0];
+    while (ready.length > 0) {
+      const node = ready.pop()!;
+      for (const target of targets[node]!) {
+        paths[target]! += paths[node]!;
+        if (--incoming[target]! === 0) ready.push(target);
+      }
+    }
+    return graph.nodes.reduce((sum, node, index) => (isTerminal(rule, node) ? sum + paths[index]! : sum), 0n);
+  }
+
+  it("are exactly the possible games", () => {
+    // 66 ways to bowl each of the first nine frames, 241 ways to bowl the tenth.
+    expect(games("standard")).toBe(66n ** 9n * 241n);
+    expect(games("current-frame")).toBe(66n ** 10n);
+  });
+
+  it("end in one node per reachable total", () => {
+    const totals = (rule: ScoringRule): number[] => {
+      const graph = rule === "standard" ? standard : currentFrame;
+      return graph.nodes.flatMap((node) => (isTerminal(rule, node) && node.kind !== "start" ? [node.score] : [])).sort((a, b) => a - b);
+    };
+    expect(totals("standard")).toEqual(Array.from({ length: 301 }, (_, total) => total));
+    // Without bonus rolls the totals from 290 to 299 cannot be reached.
+    expect(totals("current-frame")).toEqual([...Array.from({ length: 290 }, (_, total) => total), 300]);
   });
 });
 
