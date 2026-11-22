@@ -1,0 +1,41 @@
+name: Dependabot auto-merge
+
+# Squash-merges a Dependabot pull request once CI has passed on it.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  merge:
+    name: Merge
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Squash-merge the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          number=$(gh pr list --repo "$REPO" --head "$BRANCH" --author "app/dependabot" --state open \
+            --json number,headRefOid --jq ".[] | select(.headRefOid == \"$SHA\") | .number")
+          if [ -z "$number" ]; then
+            echo "No open Dependabot pull request at $SHA."
+            exit 0
+          fi
+          gh pr merge "$number" --repo "$REPO" --squash --match-head-commit "$SHA"
+
+          # A merge made with the workflow token does not start workflows, so run CI
+          # on main explicitly; that also deploys the result.
+          gh workflow run ci.yml --repo "$REPO" --ref main
