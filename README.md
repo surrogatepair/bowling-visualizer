@@ -42,13 +42,12 @@ up. Under standard scoring, frames 1 to 9 all follow the same rules, so the seco
 draws one frame, once for each of the four states it can start in, and the tenth frame
 separately.
 
-The four bonus states are not new. Cooper and Kennedy used them in 1990 to count the
-games for every final score [1]. What this project adds is the picture: the whole state
-space as one graph, and a game as a path through it. I have not found that drawn
-anywhere else.
+The four bonus states are not new. MathWorld uses the same four to count the games for
+every final score, and credits the count to Cooper and Kennedy (1990) [1]. What this
+project adds is the picture: the whole state space as one graph, and a game as a path
+through it. I have not found that drawn anywhere else.
 
-[1] C. N. Cooper and R. E. Kennedy, "A Generating Function for the Distribution of the
-Scores of All Possible Bowling Games", Mathematics Magazine 63 (1990), 239-243.
+[1] Eric W. Weisstein, "Bowling", MathWorld. https://mathworld.wolfram.com/Bowling.html
 
 ## Input
 
