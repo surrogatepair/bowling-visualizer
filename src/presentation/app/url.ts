@@ -35,12 +35,11 @@ export function buildQuery(games: readonly UrlGame[], view: ScoringRule, default
   const params = new URLSearchParams();
   const shown = games.filter((game) => game.rolls.length > 0);
   for (const game of shown) params.append("rolls", encodeRolls(game.rolls));
-  // Colours are positional, so defaults in between are spelled out; trailing ones are omitted.
-  let colored = 0;
-  shown.forEach((game, index) => {
-    if (game.color !== null && game.color !== defaultColor) colored = index + 1;
-  });
-  for (const game of shown.slice(0, colored)) params.append("color", hexDigits(game.color ?? defaultColor));
+  // Colours are matched to games by position, so once any game has a colour of its own
+  // every game gets one. Games that all use the default colour need none.
+  if (shown.some((game) => game.color !== null && game.color !== defaultColor)) {
+    for (const game of shown) params.append("color", hexDigits(game.color ?? defaultColor));
+  }
   if (view !== DEFAULT_VIEW) params.append("view", view);
   return params.toString();
 }

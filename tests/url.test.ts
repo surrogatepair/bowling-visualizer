@@ -27,15 +27,32 @@ describe("buildQuery", () => {
     expect(buildQuery([], "current-frame", DEFAULT_COLOR)).toBe("view=current-frame");
   });
 
-  it("lists colours up to the last non-default one", () => {
+  it("lists the colour of every game once one of them has its own", () => {
     const games = [
       { rolls: [10], color: null },
       { rolls: [9], color: "#00ff00" },
       { rolls: [8], color: null },
     ];
-    expect(buildQuery(games, "standard", DEFAULT_COLOR)).toBe("rolls=x&rolls=9&rolls=8&color=dc2626&color=00ff00");
+    expect(buildQuery(games, "standard", DEFAULT_COLOR)).toBe("rolls=x&rolls=9&rolls=8&color=dc2626&color=00ff00&color=dc2626");
+  });
+
+  it("writes no colours while every game uses the default", () => {
+    const games = [
+      { rolls: [10], color: null },
+      { rolls: [9], color: DEFAULT_COLOR },
+    ];
+    expect(buildQuery(games, "standard", DEFAULT_COLOR)).toBe("rolls=x&rolls=9");
   });
 });
+
+/** The original build left out default colours at the end of the list; this build keeps them. */
+function withoutTrailingDefaults(query: string): string {
+  const params = query.split("&");
+  const view = params.at(-1)?.startsWith("view=") ? params.pop()! : null;
+  while (params.at(-1) === `color=${DEFAULT_COLOR.slice(1)}`) params.pop();
+  if (view !== null) params.push(view);
+  return params.join("&");
+}
 
 /**
  * Query strings, the input the original build restored from them and the query it
@@ -50,6 +67,6 @@ describe("URLs recorded from the original build", () => {
     expect(state.view).toBe(url.view);
 
     const entries = (state.comparing ? parseComparisonInput(input) : [parseGameLine(input)]).filter(isGame);
-    expect(search(buildQuery(entries, state.view as ScoringRule, DEFAULT_COLOR))).toBe(url.synced);
+    expect(search(withoutTrailingDefaults(buildQuery(entries, state.view as ScoringRule, DEFAULT_COLOR)))).toBe(url.synced);
   });
 });
